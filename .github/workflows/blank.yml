@@ -17,19 +17,20 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Add GitHub to Known Hosts
+        run: ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: SSH into EC2 and Deploy
+        env:
+          SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            # Get GitHub Runner IP
             PUBLIC_IP=$(curl -s https://ifconfig.me)
             echo "GitHub Runner IP: $PUBLIC_IP"
 
-            # Allow SSH Access from GitHub Runner (EC2 modifies SG)
+            # Allow SSH Access from GitHub Runner
             aws ec2 authorize-security-group-ingress \
               --group-id $SECURITY_GROUP_ID \
-              --protocol tcp --port 22 --cidr $PUBLIC_IP/32
-
-            # Deploy Code
-            cd $WORK_DIR
-            git pull origin main
+              --protocol tcp --port 22 --cidr $PUBLIC_IP/32 || true
           EOF
