@@ -1,0 +1,14 @@
+name: Show GitHub Runner IP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  check-ip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get and Show Public IP
+        run: curl -s https://ifconfig.me
