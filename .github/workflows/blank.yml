@@ -1,14 +1,34 @@
-name: Show GitHub Runner IP
+name: Deploy to Production
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allows manual execution
 
 jobs:
-  check-ip:
+  deploy:
+    name: Deploy Code to Production
     runs-on: ubuntu-latest
+
     steps:
-      - name: Get and Show Public IP
-        run: curl -s https://ifconfig.me
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: SSH into EC2 and Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            # Get GitHub Runner IP
+            PUBLIC_IP=$(curl -s https://ifconfig.me)
+            echo "GitHub Runner IP: $PUBLIC_IP"
+
+            # Allow SSH Access from GitHub Runner (EC2 modifies SG)
+            aws ec2 authorize-security-group-ingress \
+              --group-id $SECURITY_GROUP_ID \
+              --protocol tcp --port 22 --cidr $PUBLIC_IP/32
+
+            # Deploy Code
+            cd $WORK_DIR
+            git pull origin main
+          EOF
