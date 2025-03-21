@@ -26,11 +26,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e  # Exit script on any error
+
+            # Get GitHub Runner IP
             PUBLIC_IP=$(curl -s https://ifconfig.me)
             echo "GitHub Runner IP: $PUBLIC_IP"
 
-            # Allow SSH Access from GitHub Runner
+            # Allow SSH Access from GitHub Runner (EC2 modifies SG)
             aws ec2 authorize-security-group-ingress \
-              --group-id sg-xxxxxxxx \
-              --protocol tcp --port 22 --cidr $PUBLIC_IP/32
+              --group-id $SECURITY_GROUP_ID \
+              --protocol tcp --port 22 --cidr $PUBLIC_IP/32 || echo "Security group update failed"
           EOF
