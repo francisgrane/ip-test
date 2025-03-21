@@ -31,6 +31,6 @@ jobs:
 
             # Allow SSH Access from GitHub Runner
             aws ec2 authorize-security-group-ingress \
-              --group-id $SECURITY_GROUP_ID \
-              --protocol tcp --port 22 --cidr $PUBLIC_IP/32 || true
+              --group-id sg-xxxxxxxx \
+              --protocol tcp --port 22 --cidr $PUBLIC_IP/32
           EOF
