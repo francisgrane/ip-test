@@ -7,7 +7,7 @@ jobs:
   test-aws-connection:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write 
+      id-token: write  # Required for OIDC
       contents: read
 
     steps:
@@ -17,5 +17,5 @@ jobs:
           role-to-assume: arn:aws:iam::008971661427:role/cicd-abilytics-role
           aws-region: us-east-1
 
-      - name: Test S3 Access
-        run: aws s3 ls
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
