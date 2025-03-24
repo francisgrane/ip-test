@@ -1,39 +1,21 @@
-name: Deploy to Production
+name: Test AWS OIDC Connection
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  deploy:
-    name: Deploy Code to Production
+  test-aws-connection:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write 
+      contents: read
 
     steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.5.4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          role-to-assume: arn:aws:iam::008971661427:role/cicd-abilytics-role
+          aws-region: us-east-1
 
-      - name: Add GitHub to Known Hosts
-        run: ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-      - name: SSH into EC2 and Deploy
-        env:
-          SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            set -e  # Exit script on any error
-
-            # Get GitHub Runner IP
-            PUBLIC_IP=$(curl -s https://ifconfig.me)
-            echo "GitHub Runner IP: $PUBLIC_IP"
-
-            # Allow SSH Access from GitHub Runner (EC2 modifies SG)
-            aws ec2 authorize-security-group-ingress \
-              --group-id $SECURITY_GROUP_ID \
-              --protocol tcp --port 22 --cidr $PUBLIC_IP/32
-          EOF
+      - name: Test S3 Access
+        run: aws s3 ls
